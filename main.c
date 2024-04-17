@@ -1,16 +1,29 @@
 #include "lvgl/lvgl.h"
 #include "lvgl/demos/lv_demos.h"
-#include "lv_drivers/display/fbdev.h"
+#include "lv_drivers/display/SPILCD.h"
 #include "lv_drivers/indev/evdev.h"
 #include <unistd.h>
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
 
-#define DISP_BUF_SIZE (128 * 1024)
+#define DISP_BUF_SIZE (SPILCD_HOR_RES * SPILCD_VER_RES * 2)
+
+void _lvgl_ui__flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p)
+{
+    printf("_lvgl_ui__flush area %d\r\n", lv_area_get_size(area));
+    
+    // size = (uint32_t)(area_p->x2 - area_p->x1 + 1) * (area_p->y2 - area_p->y1 + 1);
+    printf("area x1:%d,y1:%d,x2:%d,y2:%d\r\n", area->x1, area->y1, area->x2, area->y2);
+    
+    lv_disp_flush_ready(drv);
+    // memcpy((uint32_t *)vir[0], color_p, lv_area_get_size(area) * sizeof(lv_color_t));
+}
 
 int main(void)
 {
+    SPILCD_init();
+
     /*LittlevGL init*/
     lv_init();
 
@@ -28,9 +41,9 @@ int main(void)
     static lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
     disp_drv.draw_buf   = &disp_buf;
-    disp_drv.flush_cb   = fbdev_flush;
-    disp_drv.hor_res    = 800;
-    disp_drv.ver_res    = 480;
+    disp_drv.flush_cb   = SPILCD_flush;
+    disp_drv.hor_res    = 240;
+    disp_drv.ver_res    = 320;
     lv_disp_drv_register(&disp_drv);
 
     evdev_init();
@@ -42,16 +55,15 @@ int main(void)
     indev_drv_1.read_cb = evdev_read;
     lv_indev_t *mouse_indev = lv_indev_drv_register(&indev_drv_1);
 
-
     /*Set a cursor for the mouse*/
     LV_IMG_DECLARE(mouse_cursor_icon)
     lv_obj_t * cursor_obj = lv_img_create(lv_scr_act()); /*Create an image object for the cursor */
     lv_img_set_src(cursor_obj, &mouse_cursor_icon);           /*Set the image source*/
     lv_indev_set_cursor(mouse_indev, cursor_obj);             /*Connect the image  object to the driver*/
 
-
     /*Create a Demo*/
-    lv_demo_widgets();
+    lv_demo_benchmark();
+    // lv_demo_widgets();
 
     /*Handle LitlevGL tasks (tickless mode)*/
     while(1) {

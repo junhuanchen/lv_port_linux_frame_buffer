@@ -1,6 +1,7 @@
 #
 # Makefile
 #
+
 CC ?= gcc
 LVGL_DIR_NAME ?= lvgl
 LVGL_DIR ?= ${shell pwd}
@@ -8,6 +9,27 @@ CFLAGS ?= -O3 -g0 -I$(LVGL_DIR)/ -Wall -Wshadow -Wundef -Wmissing-prototypes -Wn
 LDFLAGS ?= -lm
 BIN = demo
 
+
+# USELIB = USE_BCM2835_LIB
+USELIB = USE_WIRINGPI_LIB
+# USELIB = USE_DEV_LIB
+# USELIB = USE_GPIOD_LIB
+DEBUG = -D $(USELIB)
+ifeq ($(USELIB), USE_BCM2835_LIB)
+    LIB = -lbcm2835
+else ifeq ($(USELIB), USE_WIRINGPI_LIB)
+    LIB = -lwiringPi# apt install wiringPi # as sysfs 
+else ifeq ($(USELIB), USE_DEV_LIB)
+    LIB = -llgpio
+else ifeq ($(USELIB), USE_GPIOD_LIB)
+    LIB = -lgpiod
+endif
+
+# MSG = -g -O0 -Wall -fsanitize=address
+# CFLAGS += $(MSG) $(DEBUG)
+
+CFLAGS += $(DEBUG)
+LDFLAGS += $(LIB)
 
 #Collect the files to compile
 MAINSRC = ./main.c
